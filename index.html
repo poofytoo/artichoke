@@ -1,0 +1,108 @@
+<html>
+<head>
+<script src="js/adapter.js"></script>
+<script src="js/StackBlur.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+</head>
+<body>
+<canvas id="video_canvas"></canvas>
+<button id="lock_btn">Lock Color</button>
+<script type="text/javascript">
+
+
+var width = 320;
+var height = 240;
+var c = 0;
+var r,g,b;
+var count = 30;
+var video = document.createElement("video");
+var canvas = document.getElementById("video_canvas");
+canvas.width = width;
+canvas.height = height;
+var context = canvas.getContext("2d");
+var locked = [];
+
+// overlays a circle
+var overlay = function(r, g, b){
+	context.beginPath();
+	context.arc(width/2, height/2, 10, 0, 2 * Math.PI, false);
+	context.lineWidth = 1;
+	context.strokeStyle = 'rgb('+r+','+g+','+b+')';
+	context.stroke();
+}
+
+// returns false if 
+var setColor = function(r, g, b){
+	
+}
+
+$('#lock_btn').click(function(){
+  locked = [r,g,b];
+  console.log('Tracking: ' + locked);
+});
+  
+var videoLoop = function() {
+  context.drawImage(video, 0, 0, width, height);
+  stackBlurCanvasRGB( "video_canvas", 0, 0, width, height, 10);
+  var imageData = context.getImageData(0, 0, width, height);
+  var data = imageData.data;
+  // Read Data
+  centerPixel = 4 * ((height/2)*width+width/2)
+  r = data[centerPixel];
+  g = data[centerPixel+1];
+  b = data[centerPixel+2];
+  m = r+g+b/3;
+
+  
+  // Hm, maybe this is good http://inspirit.github.io/jsfeat/
+  setColor(r,g,b);
+  
+  //console.log(r/m+','+g/m+','+b/m);
+  if (locked.length == 0){
+    if (c > count/2){
+      c = c % count;
+      overlay(r, g, b);
+    } else {
+      overlay(255, 255, 255);
+    }
+    ++c;
+  } else {
+  
+    var threshold = 1800;
+    var tol = [0.3,0.5,0.9];
+    // pick this color only
+    for (i = 0; i < data.length; i += 4){
+      // loop rgba
+      var s = 0;
+      for (j = 0; j < 3; j ++) {
+        s += Math.pow(data[i+j] - locked[j],2)*tol[j];
+      }
+      //console.log(s)
+      for (j = 0; j < 3; j ++) {
+        if (s < threshold){
+          data[i+j] = 255;
+        } else {
+          data[i+j] = 0;
+        }  
+      }
+      
+    }
+    context.putImageData(imageData, 0, 0);
+  }
+  setTimeout(videoLoop, 200);
+}
+  
+getUserMedia({
+    video: true,
+    audio: false
+  }, function(stream) {
+    video.src = window.URL.createObjectURL(stream);
+    video.play();
+    videoLoop();
+  }, function(error) {
+    console.warn("getUserMedia failed: " + error);
+  });
+</script>
+</body>
+</html>
