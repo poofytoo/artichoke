@@ -30,6 +30,7 @@ var overlay = function(r, g, b){
 	context.lineWidth = 1;
 	context.strokeStyle = 'rgb('+r+','+g+','+b+')';
 	context.stroke();
+	context.closePath();
 }
 
 // returns false if 
@@ -71,6 +72,8 @@ var videoLoop = function() {
   
     var threshold = 1800;
     var tol = [0.3,0.5,0.9];
+    var dim = [width,0,height,0];
+    
     // pick this color only
     for (i = 0; i < data.length; i += 4){
       // loop rgba
@@ -87,9 +90,26 @@ var videoLoop = function() {
         }  
       }
       
+      if (s < threshold){
+        x = (i % (width*4))/4;
+        y = Math.floor(i/(width*4));
+        if (x < dim[0]) dim[0] = x;
+        if (x > dim[1]) dim[1] = x;
+        if (y < dim[2]) dim[2] = y;
+        if (y > dim[3]) dim[3] = y;
+      }
     }
+    
+    console.log(dim)
     context.putImageData(imageData, 0, 0);
+    /*
+    context.rect(dim[0],dim[2],dim[1]-dim[0],dim[3]-dim[2]);
+    context.strokeStyle = 'rgb('+r+','+g+','+b+')';
+    context.stroke();
+    context.closePath();
+    */
   }
+  
   setTimeout(videoLoop, 200);
 }
   
